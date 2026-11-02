@@ -1,34 +1,16 @@
-{% extends "layout.html" %}
-{% block title %}Register{% endblock %}
+{% extends "public_base.html" %}
+{% block title %}Set up staff access{% endblock %}
+{% block header_action %}{% endblock %}
 {% block content %}
-
-<div class="register-container">
-    <h2 class="text-center text-primary">Admin Registration</h2>
-    <form method="POST" action="{{ url_for('admin.register') }}" class="register-form">
+<div class="auth-wrap">
+    <h1 class="mb-1">Set up staff access</h1>
+    <p class="text-muted mb-4">Create the first staff account. After this, new accounts are added from the Staff page.</p>
+    <form method="post" class="panel" novalidate>
         {{ form.hidden_tag() }}
-        <div class="mb-3">
-            {{ form.username.label(class="form-label") }}
-            {{ form.username(class="form-control") }}
-            {% for error in form.username.errors %}
-                <span class="text-danger">{{ error }}</span>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.password.label(class="form-label") }}
-            {{ form.password(class="form-control") }}
-            {% for error in form.password.errors %}
-                <span class="text-danger">{{ error }}</span>
-            {% endfor %}
-        </div>
-        <div class="mb-3">
-            {{ form.confirm_password.label(class="form-label") }}
-            {{ form.confirm_password(class="form-control") }}
-            {% for error in form.confirm_password.errors %}
-                <span class="text-danger">{{ error }}</span>
-            {% endfor %}
-        </div>
-        <button type="submit" class="btn btn-success w-100">Register</button>
+        {{ ui.field(form.username, wrapper="mb-3", autocomplete="username", autofocus=true) }}
+        {{ ui.field(form.password, wrapper="mb-3", autocomplete="new-password", hint="At least 8 characters.") }}
+        {{ ui.field(form.confirm_password, wrapper="mb-4", autocomplete="new-password") }}
+        <button type="submit" class="btn btn-primary w-100">Create account</button>
     </form>
 </div>
-
 {% endblock %}

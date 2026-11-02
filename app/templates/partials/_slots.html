@@ -1,0 +1,26 @@
+{% set free = slots|selectattr("free")|list %}
+<div class="slots-head">
+    <span>{{ day|nice_date }}</span>
+    <span>{{ free|length }} {{ "time" if free|length == 1 else "times" }} free, {{ rules.format_duration(duration) }} each</span>
+</div>
+{% if free %}
+<fieldset>
+    <legend class="visually-hidden">Start time</legend>
+    <div class="slot-grid">
+        {% for s in slots if not s.past %}
+        <input type="radio" name="time" id="t-{{ s.value }}" value="{{ s.value }}" required
+               data-label="{{ s.time|nice_time }}"
+               {% if not s.free %}disabled{% elif s.value == selected_time %}checked{% endif %}>
+        <label for="t-{{ s.value }}"{% if not s.free %} title="Taken"{% endif %}>{{ s.time|nice_time }}</label>
+        {% endfor %}
+    </div>
+</fieldset>
+{% else %}
+<div class="slots-empty">
+    {% if slots and slots|rejectattr("past")|list %}
+    Every time on this day is taken for a {{ rules.format_duration(duration) }} wash. Try another day, or a shorter wash.
+    {% else %}
+    There are no more times today. Pick another day.
+    {% endif %}
+</div>
+{% endif %}

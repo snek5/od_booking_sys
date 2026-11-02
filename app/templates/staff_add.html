@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block title %}Add staff{% endblock %}
+{% block content %}
+<div class="form-page" style="max-width: 28rem">
+    <a href="{{ url_for('admin.staff') }}" class="btn btn-link mb-2">{{ ui.icon("arrow-left") }}Back</a>
+    <div class="page-head">
+        <div>
+            <h1>Add staff</h1>
+            <p>Share the username and password with them. They can log in straight away.</p>
+        </div>
+    </div>
+    <form method="post" class="panel" novalidate>
+        {{ form.hidden_tag() }}
+        {{ ui.field(form.username, wrapper="mb-3", autocomplete="off", autofocus=true) }}
+        {{ ui.field(form.password, wrapper="mb-3", autocomplete="new-password", hint="At least 8 characters.") }}
+        {{ ui.field(form.confirm_password, wrapper="mb-4", autocomplete="new-password") }}
+        <div class="form-actions mt-0">
+            <button type="submit" class="btn btn-primary">Add staff</button>
+            <a href="{{ url_for('admin.staff') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

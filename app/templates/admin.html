@@ -1,101 +1,104 @@
-{% extends 'admin_base.html' %}  {# ✅ admin dashboard w/ sidebar #}
-{% block title %}Admin Dashboard{% endblock %}
+{% extends "admin_base.html" %}
+{% block title %}Bookings{% endblock %}
 {% block content %}
-
-<h2 class="text-primary mb-4">Booking List</h2>
-<!-- Car Type Statistics -->
-<div class="row text-center">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h5>SUVs</h5>
-                <p><strong>{{ suv_count }}</strong> booked</p>
-            </div>
-        </div>
+<div class="page-head">
+    <div>
+        <h1>Bookings</h1>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h5>Sedans</h5>
-                <p><strong>{{ sedan_count }}</strong> booked</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-dark">
-            <div class="card-body">
-                <h5>Trucks</h5>
-                <p><strong>{{ truck_count }}</strong> booked</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-danger text-white">
-            <div class="card-body">
-                <h5>Others</h5>
-                <p><strong>{{ other_count }}</strong> booked</p>
-            </div>
-        </div>
-    </div>
+    <a class="btn btn-primary" href="{{ url_for('admin.add_booking') }}">{{ ui.icon("plus") }}New booking</a>
 </div>
 
-<!-- 🟢 Search & Filters -->
-<form method="GET" class="row g-3 my-3">
-    <div class="col-md-3">
-        <input type="text" name="search" class="form-control" placeholder="Search by Name, Plate, Contact"
-               value="{{ search_query }}">
+<section class="today" aria-label="Today">
+    <div>
+        <div class="label">Today, {{ today.day }} {{ today.strftime("%b") }}</div>
+        <div class="num">{{ today_total }} {{ "booking" if today_total == 1 else "bookings" }}</div>
+        {% if by_car %}
+        <div class="cars">{% for car in rules.CAR_TYPES if by_car.get(car) %}{{ by_car[car] }} {{ car if by_car[car] == 1 or car == "Others" else car ~ "s" }}{{ ", " if not loop.last }}{% endfor %}</div>
+        {% endif %}
+        {% if next_up %}
+        <div class="next">Next: {{ ui.plate(next_up.car_plate) }} at {{ next_up.time|nice_time }}</div>
+        {% endif %}
     </div>
-    <div class="col-md-2">
-        <select name="sort_by" class="form-control">
-            <option value="date" {% if sort_by == "date" %}selected{% endif %}>Sort by Date</option>
-            <option value="time" {% if sort_by == "time" %}selected{% endif %}>Sort by Time</option>
-        </select>
+    {% for s in rules.STATUSES %}
+    <div>
+        <div class="label"><span class="dot" style="background: var(--{{ rules.status_key(s) if s != rules.PENDING else 'pending-bar' }})"></span>{{ s }}</div>
+        <div class="num">{{ by_status.get(s, 0) }}</div>
     </div>
-    <div class="col-md-2">
-        <select name="sort_order" class="form-control">
-            <option value="asc" {% if sort_order == "asc" %}selected{% endif %}>Ascending</option>
-            <option value="desc" {% if sort_order == "desc" %}selected{% endif %}>Descending</option>
-        </select>
+    {% endfor %}
+</section>
+
+<form method="get" class="filters" role="search">
+    <div class="search">
+        {{ ui.icon("search") }}
+        <label for="q" class="visually-hidden">Search</label>
+        <input type="search" id="q" name="q" class="form-control" placeholder="Plate, name or phone" value="{{ q }}">
     </div>
-    <div class="col-md-2">
-        <button type="submit" class="btn btn-primary w-100">Filter</button>
-    </div>
+    <label for="when" class="visually-hidden">Dates</label>
+    <select id="when" name="when" class="form-select" onchange="this.form.on.value=''; this.form.submit()">
+        {% for key, label in when_filters.items() %}
+        <option value="{{ key }}" {% if key == when and not on_date %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <label for="on" class="visually-hidden">On a date</label>
+    <input type="date" id="on" name="on" class="form-control" value="{{ on_date.isoformat() if on_date else '' }}" onchange="this.form.submit()" title="Show one day">
+    <label for="status" class="visually-hidden">Status</label>
+    <select id="status" name="status" class="form-select" onchange="this.form.submit()">
+        <option value="">Any status</option>
+        {% for s in rules.STATUSES %}<option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="btn btn-ghost">Search</button>
+    {% if filters_active %}<a href="{{ url_for('admin.dashboard') }}" class="btn btn-link">Clear</a>{% endif %}
 </form>
 
-<!-- 🟢 Booking Table & Calendar -->
-<div class="row">
-        <table class="table table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Plate Number</th>
-                    <th>Car Type</th>
-                    <th>Wash Type</th>
-                    <th>Contact Number</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for booking in bookings.items %}
-                <tr>
-                    <td>{{ booking.car_plate }}</td>
-                    <td>{{ booking.car_type }}</td>
-                    <td>{{ booking.wash_type }}</td>
-                    <td>{{ booking.contact_number }}</td>
-                    <td>{{ booking.date }}</td>
-                    <td>{{ booking.time }}</td>
-                    <td>{{ booking.status }}</td>
-                    <td>       
-                        <a href="{{ url_for('admin.edit_booking', booking_id=booking.id) }}" class="btn btn-warning btn-sm">Edit</a>
-                        <a href="{{ url_for('admin.delete_booking', booking_id=booking.id) }}" class="btn btn-danger btn-sm">Delete</a>
-                                
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div class="table-wrap">
+    {% if bookings.items %}
+    <table class="table bookings">
+        <thead>
+            <tr>
+                <th scope="col">When</th>
+                <th scope="col">Plate</th>
+                <th scope="col">Wash</th>
+                <th scope="col">Customer</th>
+                <th scope="col">Status</th>
+                <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in bookings.items %}
+            {% include "partials/_booking_row.html" %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        {% if filters_active %}
+        <h2>No bookings match</h2>
+        <p>Try a different search, or clear the filters.</p>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-ghost">Clear filters</a>
+        {% else %}
+        <h2>No upcoming bookings</h2>
+        <p>Bookings made on the customer page show up here.</p>
+        <a href="{{ url_for('admin.add_booking') }}" class="btn btn-primary">{{ ui.icon("plus") }}Add a booking</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
+{% if bookings.pages > 1 %}
+{% set args = request.args.to_dict() %}
+<nav class="pager" aria-label="Pages">
+    <span>Showing {{ bookings.first }}–{{ bookings.last }} of {{ bookings.total }}</span>
+    <div class="pages">
+        {% if bookings.has_prev %}<a href="{{ url_for('admin.dashboard', **dict(args, page=bookings.prev_num)) }}" aria-label="Previous page">‹</a>{% endif %}
+        {% for p in bookings.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if p is none %}<span class="gap">…</span>
+            {% elif p == bookings.page %}<span class="current" aria-current="page">{{ p }}</span>
+            {% else %}<a href="{{ url_for('admin.dashboard', **dict(args, page=p)) }}">{{ p }}</a>{% endif %}
+        {% endfor %}
+        {% if bookings.has_next %}<a href="{{ url_for('admin.dashboard', **dict(args, page=bookings.next_num)) }}" aria-label="Next page">›</a>{% endif %}
+    </div>
+</nav>
+{% elif bookings.total %}
+<p class="pager">{{ bookings.total }} {{ "booking" if bookings.total == 1 else "bookings" }}</p>
+{% endif %}
 {% endblock %}

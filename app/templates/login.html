@@ -1,21 +1,21 @@
-{% extends "layout.html" %}
-{% block title %}Login{% endblock %}
+{% extends "public_base.html" %}
+{% block title %}Staff login{% endblock %}
+{% block header_action %}<a class="btn btn-ghost btn-sm" href="{{ url_for('main.index') }}">Booking page</a>{% endblock %}
 {% block content %}
-
-<div class="login-container">
-    <h2 class="text-center text-primary">Admin Login</h2>
-    <form method="POST" action="{{ url_for('admin.login') }}" class="login-form">
+<div class="auth-wrap">
+    <h1 class="mb-1">Staff login</h1>
+    <p class="text-muted mb-4">See today's bookings and mark cars as they arrive.</p>
+    <form method="post" class="panel" novalidate>
         {{ form.hidden_tag() }}
-        <div class="mb-3">
-            {{ form.username.label(class="form-label") }}
-            {{ form.username(class="form-control") }}
+        <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+        {{ ui.field(form.username, wrapper="mb-3", autocomplete="username", autofocus=true) }}
+        {{ ui.field(form.password, wrapper="mb-3", autocomplete="current-password") }}
+        <div class="form-check mb-4">
+            {{ form.remember(class="form-check-input") }}
+            {{ form.remember.label(class="form-check-label") }}
         </div>
-        <div class="mb-3">
-            {{ form.password.label(class="form-label") }}
-            {{ form.password(class="form-control") }}
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Login</button>
+        <button type="submit" class="btn btn-primary w-100">Log in</button>
     </form>
+    <p class="small-print mt-3">No account? Ask a staff member to add you.</p>
 </div>
-
 {% endblock %}

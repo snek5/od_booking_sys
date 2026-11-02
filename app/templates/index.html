@@ -1,98 +1,140 @@
-{% extends 'base.html' %}  {# ✅ public-facing page, no sidebar #}
-{% block title %}Book a Car Wash{% endblock %}
+{% extends "public_base.html" %}
+{% block title %}Book a wash{% endblock %}
 {% block content %}
+<div class="row g-4 g-xl-5">
+    <div class="col-lg-7 col-xl-7">
+        <div class="intro">
+            <h1>Book a wash</h1>
+            <p>Choose your wash and a free time. Your bay will be ready when you arrive.</p>
+            <div class="hours">{{ ui.icon("clock") }} Open every day, {{ rules.open_time()|nice_time }} to {{ rules.close_time()|nice_time }}</div>
+        </div>
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <h2 class="text-center mb-4">Book a Car Wash</h2>
-        <form method="POST">
+        <form method="post" id="booking-form" novalidate>
             {{ form.hidden_tag() }}
 
-            <div class="mb-3">
-                {{ form.name.label(class="form-label") }}
-                {{ form.name(class="form-control", placeholder="Customer Name") }}
-            </div>
+            <section class="step" aria-labelledby="step-car">
+                <div class="step-head"><span class="step-num">1</span><h2 id="step-car">Your car</h2></div>
+                <div class="step-body">
+                    <label class="form-label" for="car_plate">Plate number</label>
+                    {{ form.car_plate(class="form-control plate-input" ~ (" is-invalid" if form.car_plate.errors else ""),
+                        placeholder="BAA 1234", autocomplete="off", autocapitalize="characters", spellcheck="false", maxlength="15") }}
+                    {{ ui.errors(form.car_plate) }}
 
-            <div class="mb-3">
-                {{ form.contact_number.label(class="form-label") }}
-                {{ form.contact_number(class="form-control", placeholder="e.g., 1234567") }}
-            </div>
+                    <fieldset class="mt-3">
+                        <legend class="form-label fs-6">Car type</legend>
+                        <div class="segmented">
+                            {% for sub in form.car_type %}
+                            {{ sub(**{"data-refresh-slots": "", "data-label": sub.label.text}) }}<label for="{{ sub.id }}">{{ sub.label.text }}</label>
+                            {% endfor %}
+                        </div>
+                        {{ ui.errors(form.car_type) }}
+                    </fieldset>
+                </div>
+            </section>
 
-            <div class="mb-3">
-                {{ form.car_plate.label(class="form-label") }}
-                {{ form.car_plate(class="form-control", placeholder="Car Plate Number") }}
-            </div>
+            <section class="step" aria-labelledby="step-wash">
+                <div class="step-head"><span class="step-num">2</span><h2 id="step-wash">Wash</h2></div>
+                <div class="step-body">
+                    <div class="wash-options" data-durations='{{ rules.WASH_DURATIONS|tojson }}'>
+                        {% for sub in form.wash_type %}
+                        <div class="wash-option">
+                            {{ sub(**{"data-refresh-slots": ""}) }}
+                            <label for="{{ sub.id }}">
+                                <span class="wash-name">{{ sub.label.text }}</span>
+                                <span class="wash-time" data-wash="{{ sub.data }}">{{ rules.format_duration(rules.duration_for(form.car_type.data, sub.data)) }}</span>
+                                <span class="wash-desc">{{ rules.WASH_DESCRIPTIONS[sub.data] }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {{ ui.errors(form.wash_type) }}
+                </div>
+            </section>
 
-            <div class="mb-3">
-                {{ form.car_type.label(class="form-label") }}
-                {{ form.car_type(class="form-control") }}
-            </div>
+            <section class="step" aria-labelledby="step-time">
+                <div class="step-head"><span class="step-num">3</span><h2 id="step-time">Day and time</h2></div>
+                <div class="step-body">
+                    <fieldset>
+                        <legend class="visually-hidden">Day</legend>
+                        <div class="day-strip" id="day-strip">
+                            {% for d in days %}
+                            {% set iso = d.isoformat() %}
+                            <input type="radio" name="date" id="day-{{ iso }}" value="{{ iso }}" data-refresh-slots
+                                   data-label="{{ d|nice_date }}" {% if form.date.data == d %}checked{% endif %}>
+                            <label for="day-{{ iso }}">
+                                <span class="dow">{{ "Today" if loop.first else d.strftime("%a") }}</span>
+                                <span class="dom">{{ d.day }}</span>
+                                <span class="mon">{{ d.strftime("%b") }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {{ ui.errors(form.date) }}
+                    </fieldset>
 
-            <div class="mb-3">
-                {{ form.wash_type.label(class="form-label") }}
-                {{ form.wash_type(class="form-control") }}
-            </div>
+                    <div id="slots"
+                         hx-get="{{ url_for('main.slots') }}"
+                         hx-trigger="refresh"
+                         hx-include="#booking-form [name=date]:checked, #booking-form [name=car_type]:checked, #booking-form [name=wash_type]:checked, #booking-form [name=time]:checked"
+                         hx-indicator="#slots"
+                         aria-live="polite">
+                        {% with day=form.date.data, duration=rules.duration_for(form.car_type.data, form.wash_type.data) %}
+                        {% include "partials/_slots.html" %}
+                        {% endwith %}
+                    </div>
+                    {{ ui.errors(form.time) }}
+                </div>
+            </section>
 
-            <div class="mb-3">
-                {{ form.date.label(class="form-label") }}
-                {{ form.date(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.time.label(class="form-label") }}
-                {{ form.time(class="form-control") }}
-            </div>
-
-            <button type="submit" class="btn btn-success w-100">Book Now</button>
+            <section class="step" aria-labelledby="step-you">
+                <div class="step-head"><span class="step-num">4</span><h2 id="step-you">Your details</h2></div>
+                <div class="step-body">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else ""), autocomplete="name") }}
+                            {{ ui.errors(form.name) }}
+                        </div>
+                        <div class="col-sm-6">
+                            {{ form.contact_number.label(class="form-label") }}
+                            <div class="input-group">
+                                <span class="input-group-text">+673</span>
+                                {{ form.contact_number(class="form-control" ~ (" is-invalid" if form.contact_number.errors else ""),
+                                    inputmode="numeric", autocomplete="tel-national", maxlength="9", placeholder="7123456") }}
+                            </div>
+                            {{ ui.errors(form.contact_number) }}
+                            <div class="field-hint">We'll text your booking details to this number.</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg mt-4 w-100 w-sm-auto" id="book-btn">Book this wash</button>
+                </div>
+            </section>
         </form>
-
-        <div id="availability-warning" class="text-center mt-3"></div>
     </div>
+
+    <aside class="col-lg-5 col-xl-4 offset-xl-1 d-none d-lg-block" aria-label="Your booking">
+        <div class="ticket" id="summary">
+            <div class="ticket-top">
+                <h2>Your booking</h2>
+                <div class="ticket-plate"><span class="plate plate-lg" data-sum="plate">{{ form.car_plate.data or "YOUR PLATE" }}</span></div>
+                <dl>
+                    <dt>Car</dt><dd data-sum="car">{{ form.car_type.data }}</dd>
+                    <dt>Wash</dt><dd data-sum="wash">{{ form.wash_type.data }}</dd>
+                    <dt>Takes</dt><dd data-sum="duration">{{ rules.format_duration(rules.duration_for(form.car_type.data, form.wash_type.data)) }}</dd>
+                </dl>
+            </div>
+            <div class="ticket-tear"></div>
+            <div class="ticket-bottom">
+                <div class="small-print mb-1">Arrive at</div>
+                <div class="ticket-when">
+                    <span data-sum="time" class="{{ '' if selected_time else 'is-empty' }}">{{ selected_time|nice_time if selected_time else "Pick a time" }}</span><br>
+                    <span data-sum="day">{{ form.date.data|nice_date }}</span>
+                </div>
+            </div>
+        </div>
+    </aside>
 </div>
+{% endblock %}
 
-<script src="https://unpkg.com/htmx.org"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const timeInput = document.querySelector("#time");
-        const dateInput = document.querySelector("#date");
-        const carTypeInput = document.querySelector("#car_type");
-        const washTypeInput = document.querySelector("#wash_type");
-        const bookNowButton = document.querySelector("button[type='submit']");
-
-        function checkAvailability() {
-            const date = dateInput.value;
-            const time = timeInput.value;
-            const carType = carTypeInput.value;
-            const washType = washTypeInput.value;
-
-            if (date && time && carType && washType) {
-                fetch(`/api/check-availability?date=${date}&time=${time}&car_type=${carType}&wash_type=${washType}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const warningDiv = document.querySelector("#availability-warning");
-                        if (data.available) {
-                            warningDiv.textContent = "Time slot is available.";
-                            warningDiv.style.color = "green";
-                            bookNowButton.disabled = false;
-                        } else {
-                            warningDiv.textContent = "Time slot is not available. Please choose another time.";
-                            warningDiv.style.color = "red";
-                            bookNowButton.disabled = true;
-                        }
-                    });
-            } else {
-                bookNowButton.disabled = true;
-            }
-        }
-
-        timeInput.addEventListener("change", checkAvailability);
-        dateInput.addEventListener("change", checkAvailability);
-        carTypeInput.addEventListener("change", checkAvailability);
-        washTypeInput.addEventListener("change", checkAvailability);
-
-        // Initial state
-        bookNowButton.disabled = true;
-    });
-</script>
-
+{% block scripts %}
+<script src="{{ url_for('static', filename='booking.js') }}"></script>
 {% endblock %}
