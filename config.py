@@ -37,6 +37,11 @@ class Config:
 
     ADMIN_PAGE_SIZE = 15
 
+    # When there are no staff accounts yet, let the first visitor to /admin create one.
+    # Fine on your own machine; turn it off on a public server (the container does)
+    # and create the first account with ADMIN_USERNAME/ADMIN_PASSWORD or `flask create-admin`.
+    ALLOW_FIRST_ADMIN_SIGNUP = os.getenv("ALLOW_FIRST_ADMIN_SIGNUP", "1").lower() in ("1", "true", "yes")
+
 
 class TestConfig(Config):
     TESTING = True

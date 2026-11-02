@@ -3,6 +3,7 @@
 Keep the vocabulary here so the forms, the calendar, the dashboard and the SMS
 all agree on the same names.
 """
+import threading
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -34,6 +35,12 @@ STATUSES = [PENDING, ATTENDED, NO_SHOW, CANCELLED]
 BLOCKING_STATUSES = (PENDING, ATTENDED)
 # CSS modifier per status, shared by badges and calendar events.
 STATUS_KEYS = {PENDING: "pending", ATTENDED: "attended", NO_SHOW: "noshow", CANCELLED: "cancelled"}
+
+
+# Held while checking a slot and saving the booking, so two people submitting the
+# same time at once can't both get it. Works because the server runs one process
+# (see Dockerfile); with several processes, use a database-level lock instead.
+booking_lock = threading.Lock()
 
 
 def duration_for(car_type, wash_type):

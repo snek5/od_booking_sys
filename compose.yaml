@@ -1,0 +1,21 @@
+services:
+  web:
+    build: .
+    image: carwash-booking
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # The container always uses SQLite on the volume below.
+      DATABASE_URL: sqlite:////data/car_wash.db
+      # First staff account, created on first start if it doesn't exist yet.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    volumes:
+      - carwash-data:/data
+
+volumes:
+  carwash-data:

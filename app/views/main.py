@@ -55,19 +55,23 @@ def index():
     if request.method == "GET" and not form.date.data:
         form.date.data = first_open_day(form.car_type.data, form.wash_type.data)
 
-    if form.validate_on_submit() and validate_booking_rules(form):
-        booking = Booking(
-            name=form.name.data,
-            contact_number=form.contact_number.data,
-            car_plate=form.car_plate.data,
-            car_type=form.car_type.data,
-            wash_type=form.wash_type.data,
-            date=form.date.data,
-            time=form.time.data,
-            status=rules.PENDING,
-        )
-        db.session.add(booking)
-        db.session.commit()
+    booking = None
+    if form.validate_on_submit():
+        with rules.booking_lock:
+            if validate_booking_rules(form):
+                booking = Booking(
+                    name=form.name.data,
+                    contact_number=form.contact_number.data,
+                    car_plate=form.car_plate.data,
+                    car_type=form.car_type.data,
+                    wash_type=form.wash_type.data,
+                    date=form.date.data,
+                    time=form.time.data,
+                    status=rules.PENDING,
+                )
+                db.session.add(booking)
+                db.session.commit()
+    if booking:
         sent = send_confirmation(booking)
         token = _serializer().dumps(booking.id)
         return redirect(url_for("main.booked", token=token, sms=int(sent)))

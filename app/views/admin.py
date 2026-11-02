@@ -54,8 +54,10 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for("admin.calendar_view"))
     if Admin.query.count() == 0:
-        flash("No staff accounts yet. Create the first one to get started.", "info")
-        return redirect(url_for("admin.register"))
+        if current_app.config["ALLOW_FIRST_ADMIN_SIGNUP"]:
+            flash("No staff accounts yet. Create the first one to get started.", "info")
+            return redirect(url_for("admin.register"))
+        flash("No staff accounts yet. Ask whoever runs the server to create one.", "info")
 
     form = LoginForm()
     if form.validate_on_submit():
@@ -70,8 +72,9 @@ def login():
 @admin.route("/register", methods=["GET", "POST"])
 def register():
     first_account = Admin.query.count() == 0
-    if not first_account and not current_user.is_authenticated:
-        flash("Ask an existing staff member to add your account.", "info")
+    if not current_user.is_authenticated and not (first_account and current_app.config["ALLOW_FIRST_ADMIN_SIGNUP"]):
+        if not first_account:
+            flash("Ask an existing staff member to add your account.", "info")
         return redirect(url_for("admin.login"))
 
     form = RegisterForm()
@@ -214,11 +217,15 @@ def add_booking():
                 pass
         form.date.data = form.date.data or rules.today_local()
 
-    if form.validate_on_submit() and validate_booking_rules(form, customer=False):
-        booking = Booking()
-        form.populate_obj(booking)
-        db.session.add(booking)
-        db.session.commit()
+    booking = None
+    if form.validate_on_submit():
+        with rules.booking_lock:
+            if validate_booking_rules(form, customer=False):
+                booking = Booking()
+                form.populate_obj(booking)
+                db.session.add(booking)
+                db.session.commit()
+    if booking:
         flash(f"Booking for {booking.car_plate} added.", "success")
         return redirect(_safe_next("admin.dashboard"))
     return render_template("booking_form.html", form=form, booking=None)
@@ -230,13 +237,17 @@ def edit_booking(booking_id):
     booking = db.session.get(Booking, booking_id) or abort(404)
     form = AdminBookingForm(obj=booking)
 
+    saved = False
     if form.validate_on_submit():
-        blocking = form.status.data in rules.BLOCKING_STATUSES
-        if not blocking or validate_booking_rules(form, exclude_id=booking.id, customer=False):
-            form.populate_obj(booking)
-            db.session.commit()
-            flash(f"Booking for {booking.car_plate} saved.", "success")
-            return redirect(_safe_next("admin.dashboard"))
+        with rules.booking_lock:
+            blocking = form.status.data in rules.BLOCKING_STATUSES
+            if not blocking or validate_booking_rules(form, exclude_id=booking.id, customer=False):
+                form.populate_obj(booking)
+                db.session.commit()
+                saved = True
+    if saved:
+        flash(f"Booking for {booking.car_plate} saved.", "success")
+        return redirect(_safe_next("admin.dashboard"))
     return render_template("booking_form.html", form=form, booking=booking)
 
 

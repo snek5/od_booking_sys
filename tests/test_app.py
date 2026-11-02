@@ -153,3 +153,58 @@ def test_dashboard_renders_with_filters(staff):
     add(rules.today_local(), time(17, 0))
     for q in ["", "?when=all&status=Pending", "?q=BA", "?on=" + rules.today_local().isoformat(), "?page=9"]:
         assert staff.get("/admin/dashboard" + q).status_code == 200
+
+
+# ---------- access control: customers can only book ----------
+
+STAFF_ONLY = [
+    ("GET", "/admin/dashboard"), ("GET", "/admin/calendar"), ("GET", "/admin/staff"),
+    ("GET", "/admin/booking/add"), ("POST", "/admin/booking/add"),
+    ("GET", "/admin/booking/edit/1"), ("POST", "/admin/booking/edit/1"),
+    ("GET", "/admin/booking/delete/1"), ("POST", "/admin/booking/delete/1"),
+    ("POST", "/admin/booking/1/status"), ("GET", "/admin/api/bookings"),
+    ("POST", "/admin/api/update-status/1"),
+]
+
+
+def test_customers_cannot_reach_or_change_staff_pages(client, app):
+    db.session.add(Admin(username="desk", password=generate_password_hash("washwash")))
+    b = add(tomorrow(), time(10, 0))
+    b.name, b.contact_number = "Private Person", "7999999"
+    db.session.commit()
+    for method, url in STAFF_ONLY:
+        res = client.open(url, method=method, json={"status": "Attended"} if method == "POST" else None)
+        assert res.status_code == 302 and "/admin/login" in res.location, (method, url)
+    # nothing changed, and no public page shows customer details
+    assert db.session.get(Booking, b.id).status == rules.PENDING
+    for url in ["/", f"/slots?date={tomorrow()}&car_type=Sedan&wash_type=Exterior", "/admin/login"]:
+        body = client.get(url).data
+        assert b"Private Person" not in body and b"7999999" not in body
+
+
+def test_customers_only_see_their_own_confirmation(client):
+    book(client)
+    book(client, time="11:00", name="Other Person")
+    first_link = book(client, time="12:00").location
+    page = client.get(first_link).data
+    assert b"Other Person" not in page
+
+
+def test_first_account_signup_can_be_disabled(app, client):
+    app.config["ALLOW_FIRST_ADMIN_SIGNUP"] = False
+    res = client.post("/admin/register", data={"username": "intruder", "password": "longenough",
+                                               "confirm_password": "longenough"})
+    assert res.status_code == 302 and Admin.query.count() == 0
+    assert client.get("/admin/login").status_code == 200  # shows a message instead of the signup form
+
+
+def test_create_admin_command_is_repeatable(app):
+    runner = app.test_cli_runner()
+    env = {"ADMIN_PASSWORD": "washwash"}
+    assert "created" in runner.invoke(args=["create-admin", "desk", "--if-missing"], env=env).output
+    again = runner.invoke(args=["create-admin", "desk", "--if-missing"], env=env)
+    assert again.exit_code == 0 and Admin.query.count() == 1
+
+
+def test_health_check(client):
+    assert client.get("/healthz").get_json() == {"ok": True}

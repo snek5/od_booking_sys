@@ -16,11 +16,17 @@ PREFIXES = ["BA", "BB", "BC", "BD", "BE", "BF", "BG", "BH", "KA", "KB", "TA", "B
 def register_cli(app):
     @app.cli.command("create-admin")
     @click.argument("username")
-    @click.password_option()
-    def create_admin(username, password):
+    @click.password_option(envvar="ADMIN_PASSWORD")
+    @click.option("--if-missing", is_flag=True, help="Do nothing if the account already exists.")
+    def create_admin(username, password, if_missing):
         """Create a staff account."""
         if Admin.query.filter_by(username=username).first():
+            if if_missing:
+                click.echo(f"Staff account {username} already exists.")
+                return
             raise click.ClickException(f"{username} already exists.")
+        if len(password) < 8:
+            raise click.ClickException("Use a password of at least 8 characters.")
         db.session.add(Admin(username=username, password=generate_password_hash(password)))
         db.session.commit()
         click.echo(f"Staff account {username} created.")

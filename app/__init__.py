@@ -25,7 +25,13 @@ def create_app(config_object="config.Config"):
             app.instance_path, "car_wash.db"
         )
 
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        # Wait for a busy database instead of failing straight away.
+        app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {"connect_args": {"timeout": 15}})
+
     db.init_app(app)
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite:///"):
+        _use_sqlite_wal(app)
     csrf.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
@@ -52,6 +58,10 @@ def create_app(config_object="config.Config"):
     app.jinja_env.filters["nice_time"] = booking_rules.nice_time
 
     _register_error_pages(app)
+
+    @app.get("/healthz")
+    def healthz():
+        return {"ok": True}
 
     from .cli import register_cli
 
@@ -86,3 +96,16 @@ def _register_error_pages(app):
             return jsonify({"success": False, "message": "This page expired. Reload it and try again."}), 400
         flash("This page expired, so nothing was saved. Please try again.", "warning")
         return redirect(request.full_path if request.method == "GET" else request.path)
+
+
+def _use_sqlite_wal(app):
+    """WAL lets readers keep working while a booking is being written."""
+    from sqlalchemy import event
+
+    with app.app_context():
+        @event.listens_for(db.engine, "connect")
+        def _pragmas(dbapi_conn, _record):
+            cur = dbapi_conn.cursor()
+            cur.execute("PRAGMA journal_mode=WAL")
+            cur.execute("PRAGMA busy_timeout=15000")
+            cur.close()
