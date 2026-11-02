@@ -1,10 +1,55 @@
-{% extends 'admin_base.html' %}
-{% block title %}Booking Calendar{% endblock %}
+{% extends "admin_base.html" %}
+{% block title %}Calendar{% endblock %}
 {% block content %}
+<div class="page-head">
+    <h1>Calendar</h1>
+    <a class="btn btn-primary" href="{{ url_for('admin.add_booking') }}">{{ ui.icon("plus") }}New booking</a>
+</div>
 
-<h2 class="text-primary mb-4">Booking Calendar</h2>
+<div class="panel cal-panel">
+    <div class="legend" aria-label="Colour key">
+        {% for s in rules.STATUSES %}{{ ui.status(s) }}{% endfor %}
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="show-cancelled">
+            <label class="form-check-label" for="show-cancelled">Show cancelled</label>
+        </div>
+    </div>
+    <div id="calendar"
+         data-events="{{ url_for('admin.get_bookings') }}"
+         data-status-url="{{ url_for('admin.update_booking_status', booking_id=0) }}"
+         data-edit-url="{{ url_for('admin.edit_booking', booking_id=0) }}"
+         data-add-url="{{ url_for('admin.add_booking') }}"
+         data-open="{{ rules.open_time().strftime('%H:%M') }}"
+         data-close="{{ rules.close_time().strftime('%H:%M') }}"></div>
+</div>
 
-<!-- 🔄 Calendar Container -->
-<div id="calendar"></div>
-
+<div class="modal fade" id="booking-modal" tabindex="-1" aria-labelledby="bm-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h3" id="bm-title"><span class="plate" data-f="plate"></span></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="detail-list mt-0">
+                    <dt>When</dt><dd data-f="when"></dd>
+                    <dt>Wash</dt><dd data-f="wash"></dd>
+                    <dt>Customer</dt><dd data-f="customer"></dd>
+                    <dt>Phone</dt><dd><a data-f="phone" class="text-reset"></a></dd>
+                    <dt>Status</dt><dd data-f="status"></dd>
+                </dl>
+                <div class="mark-buttons" data-f="actions"></div>
+                <div class="field-error" data-f="error" hidden></div>
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-ghost" data-f="edit">{{ ui.icon("edit") }}Edit booking</a>
+                <button type="button" class="btn btn-link" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='index.global.min.js') }}"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 {% endblock %}

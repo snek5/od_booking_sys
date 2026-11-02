@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block title %}Staff{% endblock %}
+{% block content %}
+<div class="form-page">
+    <div class="page-head">
+        <div>
+            <h1>Staff</h1>
+            <p>Everyone here can log in and manage bookings.</p>
+        </div>
+        <a class="btn btn-primary" href="{{ url_for('admin.register') }}">{{ ui.icon("plus") }}Add staff</a>
+    </div>
+    <div class="table-wrap">
+        <table class="table bookings">
+            <thead><tr><th scope="col">Username</th><th scope="col"></th></tr></thead>
+            <tbody>
+                {% for s in staff %}
+                <tr><td>{{ s.username }}</td><td class="text-end text-muted">{% if s.id == current_user.id %}You{% endif %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

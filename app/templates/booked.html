@@ -1,0 +1,32 @@
+{% extends "public_base.html" %}
+{% block title %}You're booked{% endblock %}
+{% block content %}
+<div class="confirm-wrap">
+    <div class="confirm-check">{{ ui.icon("check") }}</div>
+    <h1>You're booked</h1>
+    <p class="text-muted mb-4">
+        {% if sms_sent %}We've texted these details to +673 {{ booking.contact_number }}.
+        {% else %}Keep this page or take a screenshot. You'll need your plate number when you arrive.{% endif %}
+    </p>
+
+    <div class="ticket">
+        <div class="ticket-top">
+            <div class="ticket-plate">{{ ui.plate(booking.car_plate, "lg") }}</div>
+            <dl>
+                <dt>Name</dt><dd>{{ booking.name }}</dd>
+                <dt>Car</dt><dd>{{ booking.car_type }}</dd>
+                <dt>Wash</dt><dd>{{ booking.wash_type }}</dd>
+                <dt>Takes</dt><dd>{{ rules.format_duration(booking.duration) }}</dd>
+            </dl>
+        </div>
+        <div class="ticket-tear"></div>
+        <div class="ticket-bottom">
+            <div class="small-print mb-1">Arrive at</div>
+            <div class="ticket-when">{{ booking.time|nice_time }}<br>{{ booking.date|nice_date }}</div>
+        </div>
+    </div>
+
+    <p class="mt-4 mb-1">Need to change or cancel? {% if shop_phone %}Call us on {{ shop_phone }}.{% else %}Call or message the shop.{% endif %}</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-link">Book another wash</a>
+</div>
+{% endblock %}

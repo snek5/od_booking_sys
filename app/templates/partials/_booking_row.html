@@ -1,0 +1,37 @@
+{% import "partials/_ui.html" as ui with context %}
+{% set done = b.status in (rules.ATTENDED, rules.CANCELLED, rules.NO_SHOW) %}
+<tr id="booking-{{ b.id }}" class="{{ 'is-today' if b.date == today }} {{ 'is-done' if done }} {{ 'just-updated' if flash_row }}">
+    <td class="c-when">
+        <div class="when-time">{{ b.time|nice_time }}</div>
+        <div class="when-date">{{ b.date|nice_date }}</div>
+    </td>
+    <td class="c-plate">{{ ui.plate(b.car_plate) }}</td>
+    <td class="c-wash">
+        <div>{{ b.wash_type }}</div>
+        <div class="sub">{{ b.car_type }}, {{ rules.format_duration(b.duration) }}</div>
+    </td>
+    <td class="c-customer">
+        <div>{{ b.name }}</div>
+        <div class="sub"><a href="tel:+673{{ b.contact_number }}" class="text-reset">{{ b.contact_number }}</a></div>
+    </td>
+    <td class="c-status">{{ ui.status(b.status) }}</td>
+    <td class="c-actions">
+        <div class="row-actions">
+            {% if b.status == rules.PENDING %}
+            <button class="btn btn-mark mark-attended" hx-post="{{ url_for('admin.set_status', booking_id=b.id) }}"
+                    hx-vals='{"status": "{{ rules.ATTENDED }}"}' hx-target="closest tr" hx-swap="outerHTML">
+                {{ ui.icon("check") }}Arrived</button>
+            <button class="btn btn-mark mark-noshow" hx-post="{{ url_for('admin.set_status', booking_id=b.id) }}"
+                    hx-vals='{"status": "{{ rules.NO_SHOW }}"}' hx-target="closest tr" hx-swap="outerHTML">
+                {{ ui.icon("x") }}No show</button>
+            {% else %}
+            <button class="btn btn-mark mark-pending" hx-post="{{ url_for('admin.set_status', booking_id=b.id) }}"
+                    hx-vals='{"status": "{{ rules.PENDING }}"}' hx-target="closest tr" hx-swap="outerHTML"
+                    title="Set back to pending">
+                {{ ui.icon("undo") }}Undo</button>
+            {% endif %}
+            <a class="btn btn-ghost btn-icon" href="{{ url_for('admin.edit_booking', booking_id=b.id, next=request.full_path if request.endpoint == 'admin.dashboard' else url_for('admin.dashboard')) }}" title="Edit">
+                {{ ui.icon("edit") }}<span class="visually-hidden">Edit booking for {{ b.car_plate }}</span></a>
+        </div>
+    </td>
+</tr>

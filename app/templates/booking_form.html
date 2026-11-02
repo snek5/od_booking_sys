@@ -1,55 +1,67 @@
-{% extends 'admin_base.html' %}
-{% block title %}{{ action }} Booking{% endblock %}
+{% extends "admin_base.html" %}
+{% block title %}{{ "Edit booking" if booking else "New booking" }}{% endblock %}
 {% block content %}
-
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <h2 class="text-center mb-4">{{ action }} Booking</h2>
-        <form method="POST">
-            {{ form.hidden_tag() }}
-
-            <div class="mb-3">
-                {{ form.name.label(class="form-label") }}
-                {{ form.name(class="form-control", placeholder="Customer Name") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.contact_number.label(class="form-label") }}
-                {{ form.contact_number(class="form-control", placeholder="e.g., +1234567890") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.car_plate.label(class="form-label") }}
-                {{ form.car_plate(class="form-control", placeholder="Car Plate Number") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.car_type.label(class="form-label") }}
-                {{ form.car_type(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.wash_type.label(class="form-label") }}
-                {{ form.wash_type(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.date.label(class="form-label") }}
-                {{ form.date(class="form-control") }}
-            </div>
-
-            <div class="mb-3">
-                {{ form.time.label(class="form-label") }}
-                {{ form.time(class="form-control") }}
-            </div>
-
-            <button type="submit" class="btn btn-success w-100">{{ action }} Booking</button>
-        </form>
-
-        <div class="mt-3 text-center">
-            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+{% set back = request.args.get('next') or url_for('admin.dashboard') %}
+<div class="form-page">
+    <a href="{{ back }}" class="btn btn-link mb-2">{{ ui.icon("arrow-left") }}Back</a>
+    <div class="page-head">
+        <div>
+            <h1>{% if booking %}Edit booking{% else %}New booking{% endif %}</h1>
+            {% if booking %}<p>{% if booking.created_at %}Booked on {{ booking.created_at.day }} {{ booking.created_at.strftime("%b %Y") }}{% endif %}</p>
+            {% else %}<p>For walk-ins and phone bookings.</p>{% endif %}
         </div>
+        {% if booking %}{{ ui.status(booking.status) }}{% endif %}
     </div>
-</div>
 
+    <form method="post" class="panel" novalidate>
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="next" value="{{ back }}">
+        <div class="form-grid">
+            <div class="span-2">
+                {{ form.car_plate.label(class="form-label") }}
+                {{ form.car_plate(class="form-control plate-input" ~ (" is-invalid" if form.car_plate.errors else ""),
+                    style="font-size:1.4rem;max-width:16rem", autocomplete="off", placeholder="BAA 1234", maxlength="15") }}
+                {{ ui.errors(form.car_plate) }}
+            </div>
+            {{ ui.field(form.car_type) }}
+            {{ ui.field(form.wash_type) }}
+            {{ ui.field(form.date) }}
+            {{ ui.field(form.time, step=300) }}
+            <div class="span-2 duration-note" id="duration-note" data-durations='{{ rules.WASH_DURATIONS|tojson }}'>
+                Takes <span id="duration-text">{{ rules.format_duration(rules.duration_for(form.car_type.data, form.wash_type.data)) }}</span>.
+                Open {{ rules.open_time()|nice_time }} to {{ rules.close_time()|nice_time }}.
+            </div>
+            {{ ui.field(form.name, autocomplete="off") }}
+            <div>
+                {{ form.contact_number.label(class="form-label") }}
+                <div class="input-group">
+                    <span class="input-group-text">+673</span>
+                    {{ form.contact_number(class="form-control" ~ (" is-invalid" if form.contact_number.errors else ""), inputmode="numeric", maxlength="9") }}
+                </div>
+                {{ ui.errors(form.contact_number) }}
+            </div>
+            {{ ui.field(form.status) }}
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ "Save changes" if booking else "Add booking" }}</button>
+            <a href="{{ back }}" class="btn btn-ghost">Cancel</a>
+            {% if booking %}
+            <a href="{{ url_for('admin.delete_booking', booking_id=booking.id, next=back) }}" class="btn btn-link text-danger push">{{ ui.icon("trash") }}Delete booking</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const note = document.getElementById("duration-note");
+  const d = JSON.parse(note.dataset.durations);
+  const car = document.getElementById("car_type"), wash = document.getElementById("wash_type");
+  const fmt = (m) => { const h = Math.floor(m / 60), r = m % 60; return h && r ? `${h} h ${r} min` : h ? `${h} h` : `${r} min`; };
+  const out = document.getElementById("duration-text");
+  const update = () => { out.textContent = fmt(d[car.value][wash.value]); };
+  car.addEventListener("change", update); wash.addEventListener("change", update);
+})();
+</script>
 {% endblock %}
