@@ -252,7 +252,6 @@ a:hover { color: var(--rinse-deep); }
 }
 .site-footer .inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
 .made-by { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); text-decoration: none; }
-.made-by img { height: 28px; width: auto; }
 
 .intro { margin-bottom: 2rem; }
 .intro h1 { margin-bottom: .5rem; }

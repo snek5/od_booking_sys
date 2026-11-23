@@ -54,7 +54,7 @@ Statuses: **Pending** → **Attended**, **No Show** or **Cancelled**. Cancelled 
 │       ├── styles.css       # the design system (colours, type, components)
 │       ├── booking.js       # customer form behaviour
 │       ├── script.js        # staff calendar
-│       └── fonts/ img/ bootstrap.* htmx.min.js index.global.min.js
+│       └── fonts/ bootstrap.* htmx.min.js index.global.min.js
 ├── migrations/
 ├── tests/
 ├── Dockerfile, compose.yaml, docker-entrypoint.sh
@@ -183,4 +183,4 @@ Wash durations, car types and wash descriptions live in `app/booking_rules.py`.
 
 ## 👤 Author
 
-OuroDev
+Atlarus

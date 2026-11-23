@@ -14,4 +14,3 @@ venv/
 .pytest_cache/
 tests/
 pytest.ini
-app/static/img/ourodev.png
