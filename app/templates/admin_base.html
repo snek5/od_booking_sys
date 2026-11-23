@@ -19,6 +19,7 @@
             ("admin.dashboard", "Bookings", "list", ["admin.dashboard", "admin.edit_booking", "admin.delete_booking"]),
             ("admin.add_booking", "New booking", "plus", ["admin.add_booking"]),
             ("admin.staff", "Staff", "users", ["admin.staff", "admin.register"]),
+            ("admin.settings", "Settings", "sliders", ["admin.settings", "admin.test_sms", "admin.test_email"]),
         ] %}
         {% for endpoint, label, icon, matches in links %}
         <li><a href="{{ url_for(endpoint) }}" {% if active in matches %}aria-current="page"{% endif %}>{{ ui.icon(icon) }}{{ label }}</a></li>

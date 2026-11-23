@@ -79,6 +79,11 @@ def last_bookable_date():
     return today_local() + timedelta(days=current_app.config["BOOKING_WINDOW_DAYS"])
 
 
+def fixed_date(value):
+    """'Tue 24 Nov 2026' — for messages read later, where "Tomorrow" would mislead."""
+    return f"{value.strftime('%a')} {value.day} {value.strftime('%b %Y')}" if value else ""
+
+
 def nice_date(value):
     if not value:
         return ""

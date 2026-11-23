@@ -10,13 +10,14 @@ A booking site for a car wash: customers pick a wash and a free time slot on the
 - Four-step booking: plate number, car type, wash, then a day and time
 - Only free times are offered — the slot picker knows how long each wash takes for each car type and never double-books
 - Live summary of the booking while filling in the form, and a confirmation "ticket" afterwards
-- Optional SMS confirmation through Twilio
+- Confirmation by text message (Twilio) and/or email (Resend); the email field only appears when email is switched on
 
 **For staff** (`/admin`, login required — customers can't see any of this)
 - **Calendar** (FullCalendar): month, week and day views, coloured by status; click a booking to see details and mark it *Arrived*, *No show* or *Cancelled*; click an empty slot to add a booking there
 - **Booking list**: today's numbers at a glance, search by plate/name/phone, filter by date or status, pagination, one-click *Arrived* / *No show* (htmx)
 - Add, edit and delete bookings (walk-ins and phone bookings)
 - Staff accounts: the first account is created on first run; after that, only logged-in staff can add accounts
+- **Settings**: switch text and email confirmations on or off, and send a test message to check the keys
 
 Statuses: **Pending** → **Attended**, **No Show** or **Cancelled**. Cancelled and no-show bookings free up their slot.
 
@@ -39,7 +40,7 @@ Statuses: **Pending** → **Attended**, **No Show** or **Cancelled**. Cancelled 
 │   ├── cli.py               # flask create-admin / flask seed
 │   ├── forms.py
 │   ├── models.py
-│   ├── sms.py               # optional Twilio confirmation
+│   ├── notify.py            # confirmations: Twilio (text) and Resend (email), on/off switches
 │   ├── views
 │   │   ├── main.py          # customer booking, /slots partial, confirmation
 │   │   └── admin.py         # staff pages and calendar API
@@ -47,6 +48,7 @@ Statuses: **Pending** → **Attended**, **No Show** or **Cancelled**. Cancelled 
 │   │   ├── _base.html       # shared <head>, scripts
 │   │   ├── public_base.html # customer layout
 │   │   ├── admin_base.html  # staff layout with sidebar
+│   │   ├── emails/          # confirmation email (HTML and plain text)
 │   │   └── partials/        # UI macros, slot grid, booking row
 │   └── static
 │       ├── styles.css       # the design system (colours, type, components)
@@ -100,6 +102,19 @@ pytest
 
 ---
 
+## ✉️ Confirmation messages
+
+Customers can get their booking details by text (Twilio), by email (Resend), or both.
+
+1. Put the keys in `.env` and restart the app:
+   - **Text (Twilio):** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `MESSAGING_SERVICE` (a Messaging Service SID)
+   - **Email (Resend):** `RESEND_API_KEY`, and `RESEND_FROM` using a domain you've verified in Resend, e.g. `Nama Car Wash <bookings@namacarwash.com>`. `RESEND_REPLY_TO` is optional.
+2. Log in as staff, open **Settings**, send yourself a test, then flip each switch on or off.
+
+A channel with keys starts switched on. A channel without keys can't be switched on, and the page lists what's missing. While email is on, the booking page shows an optional email field. If Twilio or Resend is down, the booking still goes through; the failure is written to the server log.
+
+---
+
 ## 🐳 Run with Docker
 
 The image runs the app with gunicorn and keeps the SQLite database on a volume (`/data`), so bookings survive restarts and upgrades.
@@ -149,8 +164,10 @@ Set these in `.env` (see `.env.example`) or the environment.
 | `SLOT_MINUTES` | 15 | How often a booking can start. |
 | `WASH_BAYS` | 1 | How many cars can be washed at the same time. |
 | `BOOKING_WINDOW_DAYS` | 30 | How far ahead customers can book. |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `MESSAGING_SERVICE` | — | Turn on SMS confirmations. Leave empty to skip SMS. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `MESSAGING_SERVICE` | — | Twilio keys for text confirmations. Switch on/off under Settings. |
 | `SMS_COUNTRY_CODE` | +673 | Prefixed to the 7-digit phone number. |
+| `RESEND_API_KEY`, `RESEND_FROM` | — | Resend keys for email confirmations. Switch on/off under Settings. |
+| `RESEND_REPLY_TO` | — | Where customer replies to the email go (e.g. the shop's inbox). |
 | `ALLOW_FIRST_ADMIN_SIGNUP` | on (off in Docker) | Lets the first visitor to `/admin` create a staff account when none exist. |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | — | Docker only: staff account created on start if missing. |
 

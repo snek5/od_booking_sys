@@ -1,0 +1,66 @@
+{% extends "admin_base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="form-page">
+    <div class="page-head">
+        <div>
+            <h1>Settings</h1>
+            <p>How customers get their booking confirmation.</p>
+        </div>
+    </div>
+
+    {% set blurbs = {
+        "sms": "Texts the booking details to the customer's phone number as soon as they book.",
+        "email": "Emails the booking details. Customers see an optional email field on the booking page while this is on.",
+    } %}
+    {% for name in ["sms", "email"] %}
+    {% set c = channels[name] %}
+    {% set test_form = sms_form if name == "sms" else email_form %}
+    <section class="panel channel{% if c.active %} is-on{% endif %}" aria-labelledby="ch-{{ name }}">
+        <div class="channel-head">
+            <div>
+                <h2 id="ch-{{ name }}">{{ c.label }} <span class="channel-provider">through {{ c.provider }}</span></h2>
+                <p>{{ blurbs[name] }}</p>
+            </div>
+            <form method="post" action="{{ url_for('admin.set_channel', channel=name) }}" class="channel-switch">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="on" value="{{ '0' if c.on and c.ready else '1' }}">
+                <button type="submit" class="switch" role="switch"
+                        aria-checked="{{ 'true' if c.active else 'false' }}"
+                        aria-label="{{ c.label }} confirmations"
+                        {% if not c.ready %}disabled aria-describedby="ch-{{ name }}-missing"{% endif %}>
+                    <span class="switch-track"><span class="switch-thumb"></span></span>
+                    <span class="switch-text">{{ "On" if c.active else "Off" }}</span>
+                </button>
+            </form>
+        </div>
+
+        {% if not c.ready %}
+        <div class="channel-missing" id="ch-{{ name }}-missing">
+            <p>To use {{ c.provider }}, add {{ "this setting" if c.missing|length == 1 else "these settings" }} to the server's <code>.env</code> and restart the app:</p>
+            <ul>{% for key in c.missing %}<li><code>{{ key }}</code></li>{% endfor %}</ul>
+        </div>
+        {% else %}
+        <form method="post" action="{{ url_for('admin.test_' ~ name) }}" class="channel-test" novalidate>
+            {{ test_form.hidden_tag() }}
+            {% set field = test_form.number if name == "sms" else test_form.address %}
+            {{ field.label(class="form-label", text="Send a test " ~ ("text to" if name == "sms" else "email to")) }}
+            <div class="channel-test-row">
+                {% if name == "sms" %}
+                <div class="input-group">
+                    <span class="input-group-text">{{ config.SMS_COUNTRY_CODE }}</span>
+                    {{ field(class="form-control" ~ (" is-invalid" if field.errors else ""), inputmode="numeric", maxlength="9", placeholder="7123456") }}
+                </div>
+                {% else %}
+                {{ field(class="form-control" ~ (" is-invalid" if field.errors else ""), type="email", placeholder="you@example.com") }}
+                {% endif %}
+                <button type="submit" class="btn btn-ghost">Send test</button>
+            </div>
+            {{ ui.errors(field) }}
+            <div class="field-hint">Works even while the switch is off, so you can check the keys first.</div>
+        </form>
+        {% endif %}
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}

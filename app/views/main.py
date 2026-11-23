@@ -7,7 +7,7 @@ from .. import booking_rules as rules
 from .. import db
 from ..forms import BookingForm
 from ..models import Booking
-from ..sms import send_confirmation, sms_enabled
+from ..notify import is_active, send_confirmation
 
 main = Blueprint("main", __name__)
 
@@ -62,6 +62,7 @@ def index():
                 booking = Booking(
                     name=form.name.data,
                     contact_number=form.contact_number.data,
+                    email=form.email.data if is_active("email") else None,
                     car_plate=form.car_plate.data,
                     car_type=form.car_type.data,
                     wash_type=form.wash_type.data,
@@ -74,7 +75,7 @@ def index():
     if booking:
         sent = send_confirmation(booking)
         token = _serializer().dumps(booking.id)
-        return redirect(url_for("main.booked", token=token, sms=int(sent)))
+        return redirect(url_for("main.booked", token=token, sms=int(sent["sms"]), email=int(sent["email"])))
 
     slots = []
     if form.date.data and form.car_type.data in rules.CAR_TYPES and form.wash_type.data in rules.WASH_TYPES:
@@ -85,6 +86,8 @@ def index():
         days=booking_days(),
         slots=slots,
         selected_time=form.time.raw_data[0] if form.time.raw_data else "",
+        sms_on=is_active("sms"),
+        email_on=is_active("email"),
     ), (422 if request.method == "POST" else 200)
 
 
@@ -119,5 +122,5 @@ def booked(token):
         "booked.html",
         booking=booking,
         sms_sent=request.args.get("sms") == "1",
-        sms_on=sms_enabled(),
+        email_sent=request.args.get("email") == "1",
     )

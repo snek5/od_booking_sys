@@ -13,6 +13,7 @@
     <td class="c-customer">
         <div>{{ b.name }}</div>
         <div class="sub"><a href="tel:+673{{ b.contact_number }}" class="text-reset">{{ b.contact_number }}</a></div>
+        {% if b.email %}<div class="sub text-break"><a href="mailto:{{ b.email }}" class="text-reset">{{ b.email }}</a></div>{% endif %}
     </td>
     <td class="c-status">{{ ui.status(b.status) }}</td>
     <td class="c-actions">
