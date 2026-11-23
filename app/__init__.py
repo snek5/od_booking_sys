@@ -19,8 +19,10 @@ def create_app(config_object="config.Config"):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_object)
 
-    os.makedirs(app.instance_path, exist_ok=True)
     if not app.config.get("SQLALCHEMY_DATABASE_URI"):
+        # Local default: instance/car_wash.db. Only create the folder when it's used,
+        # so a read-only app directory (e.g. in Docker) is fine.
+        os.makedirs(app.instance_path, exist_ok=True)
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
             app.instance_path, "car_wash.db"
         )

@@ -145,6 +145,14 @@ docker compose cp web:/data/car_wash.db ./backup.db   # back up the database
 
 Use a different host port with `HOST_PORT=8080 docker compose up -d`. If it's on the internet, put it behind a reverse proxy with HTTPS (Caddy, nginx, Traefik).
 
+### Deploying to Render
+
+1. Create a **Web Service** from the repo; Render detects the `Dockerfile`.
+2. Choose a **paid** instance type and add a **Disk** with mount path `/data` (1 GB is plenty). Free instances can't have a disk, and without one the database is wiped on every deploy and restart.
+3. Under Environment, set `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SHOP_NAME`, and any Twilio / Resend keys. Render provides `PORT`; the app listens on it.
+
+With a disk attached, Render stops the old instance before starting the new one, so each deploy has a few seconds of downtime. Keep it to one instance.
+
 The server runs one process with several threads. That's deliberate: SQLite allows one writer at a time, and the lock that stops two customers taking the same slot lives inside that process. Don't raise `--workers` while using SQLite.
 
 ---

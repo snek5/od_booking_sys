@@ -17,12 +17,13 @@ RUN pip install -r requirements.txt gunicorn==23.0.0
 
 COPY . .
 
-# Run as an unprivileged user; /data holds the database and the generated secret key.
+# The app runs as an unprivileged user. The entrypoint starts as root only to make
+# /data writable (hosts like Render mount a root-owned disk there), then drops to it.
+# /data holds the database and the generated secret key.
 RUN useradd --system --uid 10001 --home-dir /app carwash \
     && mkdir -p /data \
     && chown -R carwash:carwash /data \
     && chmod +x docker-entrypoint.sh
-USER carwash
 
 VOLUME ["/data"]
 EXPOSE 8000

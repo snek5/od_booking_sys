@@ -3,7 +3,25 @@
 set -e
 
 DATA_DIR="${DATA_DIR:-/data}"
+
+# Started as root: make the data folder ours, then run this script again as `carwash`.
+if [ "$(id -u)" = "0" ]; then
+    mkdir -p "$DATA_DIR"
+    chown -R carwash:carwash "$DATA_DIR"
+    exec python -c '
+import os, pwd, sys
+u = pwd.getpwnam("carwash")
+os.setgroups([]); os.setgid(u.pw_gid); os.setuid(u.pw_uid)
+os.environ["HOME"] = u.pw_dir
+os.execvp(sys.argv[1], sys.argv[1:])
+' "$0" "$@"
+fi
+
 mkdir -p "$DATA_DIR"
+if [ ! -w "$DATA_DIR" ]; then
+    echo "Can't write to $DATA_DIR. Mount a writable volume there, or start the container as root so it can fix the permissions." >&2
+    exit 1
+fi
 
 # Keep one secret key across restarts so logins and confirmation links stay valid.
 if [ -z "$SECRET_KEY" ]; then
