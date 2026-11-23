@@ -17,6 +17,9 @@ RUN pip install -r requirements.txt gunicorn==23.0.0
 
 COPY . .
 
+ENV ADMIN_USERNAME=admin
+ENV ADMIN_PASSWORD=admin
+
 # The app runs as an unprivileged user. The entrypoint starts as root only to make
 # /data writable (hosts like Render mount a root-owned disk there), then drops to it.
 # /data holds the database and the generated secret key.
