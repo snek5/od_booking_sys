@@ -5,7 +5,9 @@
     <div class="confirm-check">{{ ui.icon("check") }}</div>
     <h1>You're booked</h1>
     <p class="text-muted mb-4">
-        {% if sms_sent %}We've texted these details to +673 {{ booking.contact_number }}.
+        {% if sms_sent and email_sent %}We've texted these details to +673 {{ booking.contact_number }} and emailed them to {{ booking.email }}.
+        {% elif sms_sent %}We've texted these details to +673 {{ booking.contact_number }}.
+        {% elif email_sent %}We've emailed these details to {{ booking.email }}.
         {% else %}Keep this page or take a screenshot. You'll need your plate number when you arrive.{% endif %}
     </p>
 

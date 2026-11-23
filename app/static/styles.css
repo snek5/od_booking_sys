@@ -703,3 +703,31 @@ a:hover { color: var(--rinse-deep); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---------- Settings: confirmation channels ---------- */
+.channel { margin-bottom: 1rem; border-left: 4px solid var(--line); }
+.channel.is-on { border-left-color: var(--rinse); }
+.channel-head { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; }
+.channel-head h2 { font-size: 1.25rem; margin: 0 0 .25rem; }
+.channel-head p { margin: 0; color: var(--ink-soft); max-width: 34rem; }
+.channel-provider { font-family: var(--font); font-weight: 500; font-size: 1rem; color: var(--muted); }
+.channel-switch { flex: none; }
+
+.switch { display: inline-flex; align-items: center; gap: .6rem; padding: .25rem; border: 0; background: none; color: var(--ink); font-weight: 600; cursor: pointer; }
+.switch-track { position: relative; width: 3rem; height: 1.75rem; border-radius: 999px; background: var(--line); transition: background .15s; }
+.switch-thumb { position: absolute; top: .2rem; left: .2rem; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(20, 40, 59, .3); transition: transform .15s; }
+.switch[aria-checked="true"] .switch-track { background: var(--rinse); }
+.switch[aria-checked="true"] .switch-thumb { transform: translateX(1.25rem); }
+.switch:focus-visible { outline: 3px solid var(--rinse); outline-offset: 2px; border-radius: 999px; }
+.switch:disabled { cursor: not-allowed; color: var(--muted); }
+.switch:disabled .switch-track { opacity: .6; }
+.switch-text { min-width: 1.75rem; }
+@media (prefers-reduced-motion: reduce) { .switch-track, .switch-thumb { transition: none; } }
+
+.channel-missing { margin-top: 1rem; padding: .85rem 1rem; border-radius: var(--radius-sm); background: var(--paper); }
+.channel-missing p { margin: 0 0 .35rem; color: var(--ink-soft); }
+.channel-missing ul { margin: 0; padding-left: 1.1rem; }
+.channel-test { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.channel-test-row { display: flex; gap: .5rem; max-width: 26rem; }
+.channel-test-row > :first-child { flex: 1; }
+@media (max-width: 575.98px) { .channel-head { flex-direction: column; } }

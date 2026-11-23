@@ -18,7 +18,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from .. import booking_rules as rules
 from .. import db, login_manager
-from ..forms import AdminBookingForm, LoginForm, RegisterForm
+from .. import notify
+from ..forms import AdminBookingForm, LoginForm, RegisterForm, TestEmailForm, TestSmsForm
 from ..models import Admin, Booking
 from .main import validate_booking_rules
 
@@ -142,6 +143,7 @@ def dashboard():
             Booking.name.ilike(like),
             Booking.car_plate.ilike(like),
             Booking.contact_number.ilike(like),
+            Booking.email.ilike(like),
         ))
     if status in rules.STATUSES:
         query = query.filter(Booking.status == status)
@@ -196,6 +198,82 @@ def dashboard():
         next_up=next_up,
         today=today,
     )
+
+
+# ---------- settings ----------
+
+@admin.route("/settings")
+@login_required
+def settings():
+    return _render_settings()
+
+
+def _render_settings(sms_form=None, email_form=None, status=200):
+    return render_template(
+        "settings.html",
+        channels=notify.channel_status(),
+        sms_form=sms_form or TestSmsForm(),
+        email_form=email_form or TestEmailForm(),
+    ), status
+
+
+@admin.route("/settings/<channel>", methods=["POST"])
+@login_required
+def set_channel(channel):
+    if channel not in notify.CHANNELS:
+        abort(404)
+    meta = notify.CHANNELS[channel]
+    turn_on = request.form.get("on") == "1"
+    missing = notify.missing_keys(channel)
+    if turn_on and missing:
+        flash(f"{meta['label']} can't be turned on yet: set {', '.join(missing)} on the server first.", "danger")
+    else:
+        notify.set_switch(channel, turn_on)
+        state = "on" if turn_on else "off"
+        flash(f"{meta['label']} confirmations turned {state}.", "success")
+    return redirect(url_for("admin.settings"))
+
+
+@admin.route("/settings/test/sms", methods=["POST"])
+@login_required
+def test_sms():
+    form = TestSmsForm()
+    if not form.validate_on_submit():
+        return _render_settings(sms_form=form, status=422)
+    if notify.missing_keys("sms"):
+        flash("Add the Twilio keys before sending a test text.", "danger")
+        return redirect(url_for("admin.settings"))
+    try:
+        notify.send_sms(form.number.data, f"{current_app.config['SHOP_NAME']}: test message. Text confirmations are working.")
+    except notify.SendError as e:
+        flash(f"Test text not sent. {e}", "danger")
+    else:
+        flash(f"Test text sent to {current_app.config['SMS_COUNTRY_CODE']} {form.number.data}.", "success")
+    return redirect(url_for("admin.settings"))
+
+
+@admin.route("/settings/test/email", methods=["POST"])
+@login_required
+def test_email():
+    form = TestEmailForm()
+    if not form.validate_on_submit():
+        return _render_settings(email_form=form, status=422)
+    if notify.missing_keys("email"):
+        flash("Add the Resend keys before sending a test email.", "danger")
+        return redirect(url_for("admin.settings"))
+    shop = current_app.config["SHOP_NAME"]
+    try:
+        notify.send_email(
+            form.address.data,
+            f"{shop}: test email",
+            f"<p>This is a test from {shop}. Email confirmations are working.</p>",
+            f"This is a test from {shop}. Email confirmations are working.",
+        )
+    except notify.SendError as e:
+        flash(f"Test email not sent. {e}", "danger")
+    else:
+        flash(f"Test email sent to {form.address.data}.", "success")
+    return redirect(url_for("admin.settings"))
 
 
 # ---------- create / edit / delete ----------

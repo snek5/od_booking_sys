@@ -1,0 +1,11 @@
+{{ shop_name }}: your wash is booked
+
+Hi {{ booking.name }},
+
+Plate: {{ booking.car_plate }}
+Car:   {{ booking.car_type }}
+Wash:  {{ booking.wash_type }} ({{ rules.format_duration(booking.duration) }})
+
+Arrive at {{ rules.nice_time(booking.time) }}, {{ rules.fixed_date(booking.date) }}.
+
+Need to change or cancel? {% if shop_phone %}Call us on {{ shop_phone }}.{% else %}Call or message the shop.{% endif %}

@@ -14,6 +14,7 @@ class Booking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     contact_number = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(254))
     car_plate = db.Column(db.String(15), nullable=False)
     car_type = db.Column(db.String(50), nullable=False)
     wash_type = db.Column(db.String(50), nullable=False)
@@ -50,6 +51,7 @@ class Booking(db.Model):
                 "plate": self.car_plate,
                 "name": self.name,
                 "contact": self.contact_number,
+                "email": self.email,
                 "carType": self.car_type,
                 "washType": self.wash_type,
                 "status": self.status,
@@ -67,3 +69,24 @@ class Admin(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+
+
+class Setting(db.Model):
+    """Small key/value store for things staff change from the Settings page."""
+
+    key = db.Column(db.String(50), primary_key=True)
+    value = db.Column(db.String(255), nullable=False)
+
+    @staticmethod
+    def get(key, default=None):
+        row = db.session.get(Setting, key)
+        return row.value if row else default
+
+    @staticmethod
+    def put(key, value):
+        row = db.session.get(Setting, key)
+        if row:
+            row.value = value
+        else:
+            db.session.add(Setting(key=key, value=value))
+        db.session.commit()

@@ -29,11 +29,19 @@ class Config:
     WASH_BAYS = _int("WASH_BAYS", 1)              # cars that can be washed at the same time
     BOOKING_WINDOW_DAYS = _int("BOOKING_WINDOW_DAYS", 30)  # how far ahead customers can book
 
-    # SMS confirmations (optional). If any of these is missing, SMS is skipped.
+    # Booking confirmations. Keys live here (environment / .env); staff switch each
+    # channel on or off on the Settings page. A channel with missing keys stays off.
+    #
+    # SMS through Twilio.
     TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
     TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
     TWILIO_MESSAGING_SERVICE = os.getenv("MESSAGING_SERVICE")
     SMS_COUNTRY_CODE = os.getenv("SMS_COUNTRY_CODE", "+673")
+    # Email through Resend (https://resend.com). RESEND_FROM must use a domain
+    # you've verified in Resend, e.g. "Nama Car Wash <bookings@namacarwash.com>".
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+    RESEND_FROM = os.getenv("RESEND_FROM")
+    RESEND_REPLY_TO = os.getenv("RESEND_REPLY_TO")
 
     ADMIN_PAGE_SIZE = 15
 

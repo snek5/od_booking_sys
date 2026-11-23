@@ -102,8 +102,17 @@
                                     inputmode="numeric", autocomplete="tel-national", maxlength="9", placeholder="7123456") }}
                             </div>
                             {{ ui.errors(form.contact_number) }}
-                            <div class="field-hint">We'll text your booking details to this number.</div>
+                            <div class="field-hint">{% if sms_on %}We'll text your booking details to this number.{% else %}So we can reach you about your booking.{% endif %}</div>
                         </div>
+                        {% if email_on %}
+                        <div class="col-sm-6">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control" ~ (" is-invalid" if form.email.errors else ""),
+                                type="email", autocomplete="email", inputmode="email", placeholder="name@example.com") }}
+                            {{ ui.errors(form.email) }}
+                            <div class="field-hint">We'll email your booking details here.</div>
+                        </div>
+                        {% endif %}
                     </div>
                     <button type="submit" class="btn btn-primary btn-lg mt-4 w-100 w-sm-auto" id="book-btn">Book this wash</button>
                 </div>

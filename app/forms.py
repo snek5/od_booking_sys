@@ -10,7 +10,7 @@ from wtforms import (
     StringField,
     TimeField,
 )
-from wtforms.validators import DataRequired, EqualTo, Length, Regexp, ValidationError
+from wtforms.validators import DataRequired, EqualTo, Length, Optional, Regexp, ValidationError
 
 from . import booking_rules as rules
 
@@ -21,6 +21,26 @@ def _clean_plate(value):
 
 def _strip(value):
     return (value or "").strip()
+
+
+def _clean_email(value):
+    return (value or "").strip().lower() or None
+
+
+EMAIL_RE = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+PHONE_FILTER = lambda v: re.sub(r"[\s-]", "", v or "")  # noqa: E731
+
+
+def email_field(label):
+    return StringField(
+        label,
+        filters=[_clean_email],
+        validators=[
+            Optional(),
+            Length(max=254, message="That email address is too long."),
+            Regexp(EMAIL_RE, message="Enter an email address like name@example.com."),
+        ],
+    )
 
 
 class BookingForm(FlaskForm):
@@ -62,6 +82,7 @@ class BookingForm(FlaskForm):
             Regexp(r"^\d{7}$", message="Enter the 7-digit number, without +673."),
         ],
     )
+    email = email_field("Email (optional)")
 
 
 class AdminBookingForm(BookingForm):
@@ -110,3 +131,25 @@ class RegisterForm(FlaskForm):
 
         if Admin.query.filter_by(username=field.data).first():
             raise ValidationError("That username is taken.")
+
+
+class TestSmsForm(FlaskForm):
+    number = StringField(
+        "Phone number",
+        filters=[PHONE_FILTER],
+        validators=[
+            DataRequired("Enter a phone number."),
+            Regexp(r"^\d{7}$", message="Enter the 7-digit number, without +673."),
+        ],
+    )
+
+
+class TestEmailForm(FlaskForm):
+    address = StringField(
+        "Email address",
+        filters=[_clean_email],
+        validators=[
+            DataRequired("Enter an email address."),
+            Regexp(EMAIL_RE, message="Enter an email address like name@example.com."),
+        ],
+    )

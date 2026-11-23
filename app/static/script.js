@@ -101,6 +101,9 @@ document.addEventListener("DOMContentLoaded", function () {
     f("customer").textContent = p.name;
     f("phone").textContent = p.contact;
     f("phone").href = `tel:+673${p.contact}`;
+    f("email").textContent = p.email || "";
+    f("email").href = p.email ? `mailto:${p.email}` : "";
+    f("email-label").hidden = f("email-row").hidden = !p.email;
     f("status").replaceChildren(statusBadge(p.status, p.statusKey));
     f("edit").href = `${urlFor(el.dataset.editUrl, event.id)}?next=${encodeURIComponent(window.location.pathname)}`;
     f("error").hidden = true;
